@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+	<form action ="viewAccount" method = "post">
+	<table>
+		<tr th:each="currentAccount : ${accounts}">
+		<td><input type="radio" name="id" value="${currentAccount.ID}"></td>
+			<td th:text="${currentAccount.balance}" />
+			<td th:text="${currentAccount.interestRate}" />
+			<td th:text="${currentAccount.type}" />
+		</tr>
+		</table>
+		<input type = "submit" value = "view account">
+		</form>
+</body>
+</html>

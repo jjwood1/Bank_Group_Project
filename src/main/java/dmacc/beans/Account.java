@@ -22,7 +22,7 @@ public class Account {
 	//private variables
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private int ID;
+	private long ID;
 	private double balance;
 	private double interestRate;
 	private Date dateCreated;
@@ -31,7 +31,7 @@ public class Account {
 	
 	@OneToMany(orphanRemoval = true, fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	@JoinColumn(name = "at_id", referencedColumnName = "ID")
-	List<Transaction> transactions = new ArrayList();
+	List<Transaction> transactions = new ArrayList<Transaction>();
 	//I am pretty sure this is correct 
 	@ManyToOne
 	@JoinColumn(name="userID")
@@ -67,9 +67,9 @@ public class Account {
 		this.dateCreated = dateCreated;
 		this.user = user;
 	}
-	public Account(int iD, float balance, float interestRate, Date dateCreated, User user) {
+	public Account(long iD, float balance, float interestRate, Date dateCreated, User user) {
 		super();
-		ID = iD;
+		this.ID = iD;
 		this.balance = balance;
 		this.interestRate = interestRate;
 		this.dateCreated = dateCreated;
@@ -87,13 +87,13 @@ public class Account {
 	/**
 	 * @return the iD
 	 */
-	public int getID() {
+	public long getID() {
 		return ID;
 	}
 	/**
 	 * @param iD the iD to set
 	 */
-	public void setID(int iD) {
+	public void setID(long iD) {
 		ID = iD;
 	}
 	/**

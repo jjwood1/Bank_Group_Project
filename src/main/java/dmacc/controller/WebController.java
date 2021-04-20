@@ -1,5 +1,7 @@
 package dmacc.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -7,9 +9,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import dmacc.beans.Account;
 import dmacc.beans.Employee;
+import dmacc.beans.Transaction;
 import dmacc.beans.User;
 import dmacc.repository.AccountRepo;
 import dmacc.repository.EmployeeRepo;
@@ -23,7 +27,7 @@ import dmacc.repository.UserRepo;
  */
 @Controller
 public class WebController {
-	
+
 	@Autowired
 	UserRepo userRepo;
 	@Autowired
@@ -37,21 +41,25 @@ public class WebController {
 		if (userRepo.findAll().isEmpty()) {
 			return addNewUser(model);
 		}
-
 		model.addAttribute("users", userRepo.findAll());
-		return "employeesAllUsers";
+		return "viewAllUsers";
 	}
-	@GetMapping("viewUserAccounts/{userID}")
-	public String viewUserAccounts(@PathVariable("userID") long id, Model model) {
-		User myUser = userRepo.findById(id).orElse(null);
-		if (acctRepo.findAll().isEmpty()) {
-			return addNewUser(model);
-		}
-		//model.addAttribute("accounts", myUser.getAccounts());
-		model.addAttribute("accounts", acctRepo.findAll());
-		return "employeesAllUserAccounts";
+	@GetMapping("/viewUserAccounts/{id}")
+	public String viewUserAccount(@PathVariable("id") long id, Model model)
+	{
+		User user = userRepo.findById(id).orElse(null);
+		model.addAttribute("user", user);
+		return "viewUserAccounts";
 	}
-
+	@GetMapping("/viewAccountTransactions/{id}")
+	public String viewAccountTransactions(@PathVariable("id") long id, Model model)
+	{
+		Account account = acctRepo.findById(id).orElse(null);
+		List<Transaction> transactions = account.getTransactions();
+		model.addAttribute("transactions", transactions);
+		return "viewAccountTransactions";
+		
+	}
 	@GetMapping("/inputUser")
 	public String addNewUser(Model model) {
 		User u = new User();
@@ -79,51 +87,77 @@ public class WebController {
 	}
 	
 	
-	@GetMapping({ "/", "viewAllAccounts" })
+	/*@GetMapping({"viewAllAccounts" })
 	public String viewAllAccounts(Model model) {
 		if (acctRepo.findAll().isEmpty()) {
-			return addNewAccount(model);
+			return (model);
 		}
 
 		model.addAttribute("accounts", acctRepo.findAll());
 		return "results";
-	}
+	}*/
 
-	@GetMapping("/inputAccount")
-	public String addNewAccount(Model model) {
+	@GetMapping("/inputAccount{id}")
+	public String addNewAccount(@PathVariable("id") long id, Model model) {
 		Account a = new Account();
+		User user = userRepo.findById(id).orElse(null);
+		model.addAttribute("user", user);
 		model.addAttribute("newAccount", a);
 		return "inputAccount";
 	}
 
 	@PostMapping("/inputAccount")
-	public String addNewAccount(@ModelAttribute Account a, Model model) {
-		acctRepo.save(a);
-		return viewAllAccounts(model);
+	public String addNewAccount(@ModelAttribute User user, @ModelAttribute Account a, Model model) {
+		user.getAccounts().add(a);
+		userRepo.save(user);
+		return viewUserAccount(user.getUserID(), model);
 	}
 	
-	@GetMapping("/editAccount/{ID}")
-	public String showUpdateAccount(@PathVariable("ID") long id, Model model) {
+	@GetMapping("/editAccount/{AccountID}/{UserID}")
+	public String showUpdateAccount(@PathVariable("AccountID") long id, 
+			@PathVariable("UserID") long userID, Model model) {
+		User user = userRepo.findById(userID).orElse(null);
 		Account a = acctRepo.findById(id).orElse(null);
+		model.addAttribute("user", user);
 		model.addAttribute("newAccount", a);
 		return "inputAccount";
+		//return "transresult";
 	}
 
-	@PostMapping("/updateAccount/{ID}")
-	public String reviseAccount(Account a, Model model) {
-		acctRepo.save(a);
-		return viewAllUsers(model);
+	@PostMapping("/updateAccount/{UserID}/{AccountId}")
+	public String reviseAccount(@PathVariable("AccountId") long id,
+			@PathVariable("UserID") long userID, @ModelAttribute("newAccount") Account a, Model model) {
+		User user = userRepo.findById(userID).orElse(null);
+		Account account = acctRepo.findById(id).orElse(null);
+		if(account == null) {
+			user.getAccounts().add(a);
+			userRepo.save(user);
+		}
+		else {
+			a.setID(id);
+			acctRepo.save(a);
+		}
+		model.addAttribute("user", user);
+		model.addAttribute("newAccount", a);
+		//return "transresult";
+		return viewUserAccount(userID, model);
 	}
 	
-	
-	@GetMapping({ "/", "viewAllEmployees" })
+	@GetMapping("/deleteAccount/{accountID}/{userID}")
+	public String deleteAccount(@PathVariable("accountID") long accountID, @PathVariable("userID") long userID, Model model) {
+		Account account = acctRepo.findById(accountID).orElse(null);
+		model.addAttribute("userID", userID);
+		acctRepo.delete(account);
+		return viewUserAccount(userID, model);
+	}
+
+	@GetMapping({"/viewAllEmployees" })
 	public String viewAllEmployees(Model model) {
 		if (empRepo.findAll().isEmpty()) {
 			return addNewEmployee(model);
 		}
-
 		model.addAttribute("employees", empRepo.findAll());
-		return "results";
+		return "viewAllEmployees";
 	}
 
 	@GetMapping("/inputEmployee")
@@ -151,4 +185,52 @@ public class WebController {
 		empRepo.save(e);
 		return viewAllEmployees(model);
 	}
+
+	@GetMapping("/deleteEmployee/{employeeID}")
+	public String deleteEmployee(@PathVariable("employeeID") long id, Model model) {
+		Employee e = empRepo.findById(id).orElse(null);
+		empRepo.delete(e);
+		return "/view;
+	}
+	
+	@GetMapping("/deleteUser/{userID}")
+	public String deleteUser(@PathVariable("userID") long id, Model model) {
+		User user = userRepo.findById(id).orElse(null);
+		userRepo.delete(user);
+		return viewAllUsers(model);
+	}
+	@GetMapping("/newTransaction/{AccountID}/{UserID}")
+	public String addTransaction(@PathVariable("AccountID") long accountID, @PathVariable("UserID") long userID, Model model) {
+		Account accnt = acctRepo.findById(accountID).orElse(null);
+		User user = userRepo.findById(userID).orElse(null);
+		model.addAttribute("user", user);
+		model.addAttribute("account", accnt);
+		Transaction t = new Transaction();
+		String action = "";
+		model.addAttribute("action", action);
+		model.addAttribute("newTransaction", t);
+		return "withdrawal_deposit";	
+		
+	}
+	@PostMapping("/newTransaction/{AccountID}/{UserID}")
+	public String addTransaction(@PathVariable("AccountID") long accountID, @PathVariable("UserID") long userID, @ModelAttribute Transaction t, 
+			@RequestParam String action, Model model) {
+		Account account = acctRepo.findById(accountID).orElse(null);
+		account.getTransactions().add(t);
+		User user = userRepo.findById(userID).orElse(null);
+		double balance = account.getBalance();
+		model.addAttribute("account", account);
+		if(action.equals("deposit"))
+		{
+			account.setBalance(balance += t.getAmount());
+		}
+		else {
+			account.setBalance(balance -= t.getAmount());
+		}
+		model.addAttribute("user", user);
+		acctRepo.save(account);
+		return viewAccountTransactions(accountID, model);
+	
+	}
 }
+
